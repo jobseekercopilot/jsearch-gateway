@@ -169,7 +169,7 @@ public class JSearchApiClient implements JSearchProviderClient {
         job.setDescription(text(node, "job_description"));
         job.setEmploymentType(firstText(node, "job_employment_type", "job_employment_types"));
         job.setPrimaryApplyUrl(text(node, "job_apply_link"));
-        job.setDirectApply(node.path("job_apply_is_direct").isMissingNode() ? null : node.path("job_apply_is_direct").asBoolean());
+        job.setDirectApply(booleanValue(node, "job_apply_is_direct"));
         job.setLocationDisplayName(firstText(node, "job_location", "job_city"));
         job.setCity(text(node, "job_city"));
         job.setState(text(node, "job_state"));
@@ -182,13 +182,13 @@ public class JSearchApiClient implements JSearchProviderClient {
         job.setSalaryPeriod(text(node, "job_salary_period"));
         job.setPostedAt(text(node, "job_posted_at_datetime_utc"));
         job.setExpiresAt(text(node, "job_offer_expiration_datetime_utc"));
-        job.setRemote(node.path("job_is_remote").isMissingNode() ? null : node.path("job_is_remote").asBoolean());
+        job.setRemote(booleanValue(node, "job_is_remote"));
         var options = new ArrayList<JSearchApplyOption>();
         node.path("apply_options").forEach(optionNode -> {
             JSearchApplyOption option = new JSearchApplyOption();
             option.setPublisher(text(optionNode, "publisher"));
             option.setApplyUrl(text(optionNode, "apply_link"));
-            option.setDirect(optionNode.path("is_direct").isMissingNode() ? null : optionNode.path("is_direct").asBoolean());
+            option.setDirect(booleanValue(optionNode, "is_direct"));
             options.add(option);
         });
         job.setApplyOptions(options);
@@ -217,6 +217,12 @@ public class JSearchApiClient implements JSearchProviderClient {
 
     private BigDecimal decimal(JsonNode node, String field) {
         return node.path(field).isNumber() ? node.path(field).decimalValue() : null;
+    }
+
+    private Boolean booleanValue(JsonNode node, String field) {
+        return node.path(field).isBoolean()
+                ? node.path(field).booleanValue()
+                : null;
     }
 
     private boolean blank(String value) {

@@ -15,9 +15,8 @@
   shared deadline, rate limiter, circuit breaker, or controlled retry policy.
 - **P1 pagination:** the provider supports cursors but the current Job Service
   path requests only the initial page.
-- **P1 coverage/container:** no tests were found. The container now verifies
-  and packages from source, but uses unpinned images, runs as root, and has no
-  health check.
+- **P1 container:** the container verifies and packages from source, but uses
+  unpinned images, runs as root, and has no health check.
 
 ## Resolved evidence
 
@@ -25,6 +24,12 @@
   producer revision/checksum recorded in source. Contract negative tests,
   clean Maven verification and a source-only container build pass without
   `libs`, `systemPath` or prebuilt application JARs.
+- Seven offline tests now cover representative, missing and malformed provider
+  payloads; apply links, salary, date, location and source semantics; multi-page
+  cursor propagation; healthy empty results; rate-limit/upstream errors; the
+  gateway HTTP contract; and populated/empty System Data fixture mapping.
+  Generated fixture types and method signatures are compile-time test inputs,
+  detecting incompatible producer contract drift.
 
 ## Provider evidence
 
@@ -37,7 +42,7 @@ resolved by inference: account-specific written permission is required.
 
 Clean-clone build/container evidence; versioned contract and drift checks;
 credential rotation and full-history scan; written provider permission;
-validated queries; deterministic mapping/error/fixture/cursor tests; and
-measured deadline, quota, retry and degradation behaviour.
+validated queries; and measured deadline, quota, retry and degradation
+behaviour.
 
 This audit is not a beta-readiness approval.
