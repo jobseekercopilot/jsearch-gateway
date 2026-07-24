@@ -9,6 +9,10 @@ generated from a pinned producer contract; compliance, validation, resilience,
 and coverage remain open. See
 [`docs/BETA_READINESS_AUDIT.md`](docs/BETA_READINESS_AUDIT.md).
 
+Its provider-specific ownership and the boundary with canonical Job Service
+results are defined in the Infrastructure
+[Job Search architecture ADR](https://github.com/jobseekercopilot/infrastructure/blob/develop/docs/adr/0001-job-search-architecture-and-ownership.md).
+
 ## Local verification
 
 ```bash
