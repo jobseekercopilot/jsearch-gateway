@@ -29,8 +29,13 @@ System Data client. They never call JSearch or require an API key. Referencing
 the generated fixture models and method signatures directly makes incompatible
 producer contract changes fail compilation.
 
-Live mode requires `JSEARCH_API_KEY`, with no repository default.
-`EXTERNAL_PROVIDER_MODE=FIXTURE` is permitted only outside production.
+The safe default is `EXTERNAL_PROVIDER_MODE=FIXTURE`, which requires no live
+credential and is restricted to non-production use. Enabled `LIVE` mode
+requires `JSEARCH_API_KEY` before startup succeeds; it has no non-empty
+repository default. `JSEARCH_ENABLED=false` is the provider kill switch.
+Rotation, restricted evidence, renewal, history verification and incident
+procedures are defined in
+[`docs/CREDENTIAL_OPERATIONS.md`](docs/CREDENTIAL_OPERATIONS.md).
 
 `develop` is the integration/default branch for beta hardening. See
 `CONTRIBUTING.md`, `SECURITY.md`, and `LICENSE`.

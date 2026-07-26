@@ -50,11 +50,13 @@ public class JSearchApiClient implements JSearchProviderClient {
 
     @Override
     public JSearchSearchResponse search(JSearchSearchRequest request) {
-        if (!properties.isEnabled() || blank(properties.getApiKey())) {
-            log.warn("JSearch provider disabled or credentials missing enabled={} hasApiKey={}",
-                    properties.isEnabled(),
-                    !blank(properties.getApiKey()));
+        if (!properties.isEnabled()) {
+            log.warn("JSearch provider is disabled");
             return empty();
+        }
+        if (blank(properties.getApiKey())) {
+            throw new ProviderUnavailableException(
+                    "JSearch live provider credential is not configured");
         }
         long startedAt = System.nanoTime();
         log.info("JSearch provider request started targetRole={} location={} remoteOnly={} pages={}",
@@ -117,14 +119,12 @@ public class JSearchApiClient implements JSearchProviderClient {
             log.warn("JSearch provider failed status={} durationMs={} error={}",
                     ex.getStatusCode().value(),
                     (System.nanoTime() - startedAt) / 1_000_000,
-                    ex.getClass().getSimpleName(),
-                    ex);
+                    ex.getClass().getSimpleName());
             throw new ProviderUnavailableException("JSearch API request failed", ex);
         } catch (RuntimeException ex) {
             log.warn("JSearch provider failed durationMs={} error={}",
                     (System.nanoTime() - startedAt) / 1_000_000,
-                    ex.getClass().getSimpleName(),
-                    ex);
+                    ex.getClass().getSimpleName());
             throw new ProviderUnavailableException("JSearch API request failed", ex);
         }
     }
@@ -230,6 +230,10 @@ public class JSearchApiClient implements JSearchProviderClient {
     }
 
     public static class ProviderUnavailableException extends RuntimeException {
+        public ProviderUnavailableException(String message) {
+            super(message);
+        }
+
         public ProviderUnavailableException(String message, Throwable cause) {
             super(message, cause);
         }

@@ -3,14 +3,15 @@
 ## Blocking findings
 
 - **P0 credential response:** a non-empty API-key default was present in
-  current source. It has been removed from this candidate, but rotation and a
-  full-history scan are mandatory.
+  earlier source. The current repository defaults to credential-free fixture
+  mode, enabled live mode fails closed without the injected key, and provider
+  errors do not log exception/request representations. The provider
+  administrator must still revoke/rotate the exposed key and retain restricted
+  evidence before publication.
 - **P0 provider compliance:** the public product page promotes job-product use
   while general terms restrict copying, aggregation, public display and
   systematic retrieval. The actual account's written permissions, quotas,
   caching, retention, deletion and attribution rules are unresolved.
-- **P1 correctness:** missing credentials are returned as a successful empty
-  result, making operator failure indistinguishable from no jobs.
 - **P1 API and resilience:** there is no bounded validation, explicit timeout,
   shared deadline, rate limiter, circuit breaker, or controlled retry policy.
 - **P1 pagination:** the provider supports cursors but the current Job Service
@@ -30,6 +31,11 @@
   gateway HTTP contract; and populated/empty System Data fixture mapping.
   Generated fixture types and method signatures are compile-time test inputs,
   detecting incompatible producer contract drift.
+- Deterministic credential tests prove fixture mode needs no live value,
+  enabled live startup/request paths reject a missing key, the explicit kill
+  switch makes no request, and upstream error logs exclude the credential.
+  The repository-owned rotation/incident procedure is published in
+  [`CREDENTIAL_OPERATIONS.md`](CREDENTIAL_OPERATIONS.md).
 
 ## Provider evidence
 

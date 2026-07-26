@@ -20,7 +20,11 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 
+@ExtendWith(OutputCaptureExtension.class)
 class JSearchApiClientTest {
 
     private final AtomicInteger responseStatus = new AtomicInteger(200);
@@ -228,6 +232,50 @@ class JSearchApiClientTest {
                 .isInstanceOf(
                         JSearchApiClient.ProviderUnavailableException.class)
                 .hasMessage("JSearch API request failed");
+    }
+
+    @Test
+    void rejectsMissingLiveCredentialInsteadOfReturningNoMatches() {
+        properties.setApiKey("");
+
+        assertThatThrownBy(() -> new JSearchApiClient(properties)
+                        .search(request(false, null)))
+                .isInstanceOf(
+                        JSearchApiClient.ProviderUnavailableException.class)
+                .hasMessage(
+                        "JSearch live provider credential is not configured");
+        assertThat(requestedUris).isEmpty();
+    }
+
+    @Test
+    void explicitKillSwitchReturnsNoMatchesWithoutCredential() {
+        properties.setEnabled(false);
+        properties.setApiKey("");
+
+        var response = new JSearchApiClient(properties)
+                .search(request(false, null));
+
+        assertThat(response.getProvider()).isEqualTo("JSEARCH");
+        assertThat(response.getJobs()).isEmpty();
+        assertThat(requestedUris).isEmpty();
+    }
+
+    @Test
+    void upstreamFailureLogsNeverContainCredential(
+            CapturedOutput output) {
+        String privateApiKey = "private-api-key-for-redaction";
+        properties.setApiKey(privateApiKey);
+        responseStatus.set(503);
+
+        assertThatThrownBy(() -> new JSearchApiClient(properties)
+                        .search(request(false, null)))
+                .isInstanceOf(
+                        JSearchApiClient.ProviderUnavailableException.class)
+                .hasMessage("JSearch API request failed");
+
+        assertThat(output)
+                .contains("status=503")
+                .doesNotContain(privateApiKey, "X-API-KEY");
     }
 
     private JSearchSearchRequest request(
