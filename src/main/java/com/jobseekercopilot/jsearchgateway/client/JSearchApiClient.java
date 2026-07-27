@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -114,18 +115,28 @@ public class JSearchApiClient implements JSearchProviderClient {
             log.warn("JSearch provider rate limited status={} durationMs={}",
                     ex.getStatusCode().value(),
                     (System.nanoTime() - startedAt) / 1_000_000);
-            throw new ProviderUnavailableException("JSearch rate limit exceeded", ex);
+            throw new ProviderUnavailableException(
+                    "JSearch rate limit exceeded",
+                    HttpStatus.TOO_MANY_REQUESTS);
         } catch (WebClientResponseException ex) {
             log.warn("JSearch provider failed status={} durationMs={} error={}",
                     ex.getStatusCode().value(),
                     (System.nanoTime() - startedAt) / 1_000_000,
                     ex.getClass().getSimpleName());
-            throw new ProviderUnavailableException("JSearch API request failed", ex);
+            HttpStatus status = ex.getStatusCode() == HttpStatus.UNAUTHORIZED
+                    || ex.getStatusCode() == HttpStatus.FORBIDDEN
+                    ? HttpStatus.valueOf(ex.getStatusCode().value())
+                    : HttpStatus.SERVICE_UNAVAILABLE;
+            throw new ProviderUnavailableException(
+                    "JSearch API request failed",
+                    status);
         } catch (RuntimeException ex) {
             log.warn("JSearch provider failed durationMs={} error={}",
                     (System.nanoTime() - startedAt) / 1_000_000,
                     ex.getClass().getSimpleName());
-            throw new ProviderUnavailableException("JSearch API request failed", ex);
+            throw new ProviderUnavailableException(
+                    "JSearch API request failed",
+                    HttpStatus.SERVICE_UNAVAILABLE);
         }
     }
 
@@ -230,12 +241,21 @@ public class JSearchApiClient implements JSearchProviderClient {
     }
 
     public static class ProviderUnavailableException extends RuntimeException {
+        private final HttpStatus status;
+
         public ProviderUnavailableException(String message) {
-            super(message);
+            this(message, HttpStatus.SERVICE_UNAVAILABLE);
         }
 
-        public ProviderUnavailableException(String message, Throwable cause) {
-            super(message, cause);
+        public ProviderUnavailableException(
+                String message,
+                HttpStatus status) {
+            super(message, null, false, false);
+            this.status = status;
+        }
+
+        public HttpStatus getStatus() {
+            return status;
         }
     }
 }
