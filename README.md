@@ -5,7 +5,7 @@ construction, and provider response mapping behind the Job Seeker Copilot
 provider contract. Fixture mode reads only synthetic System Data responses.
 
 Status: **migration candidate; not beta-ready**. Its System Data client is now
-generated from a pinned producer contract. Seven deterministic offline tests
+generated from a pinned producer contract. Deterministic offline tests
 cover provider mapping, apply links, cursors, empty/error behavior, the gateway
 contract, and populated/empty System Data fixtures. Compliance, validation,
 resilience, and remaining beta gaps stay open. See
@@ -33,6 +33,9 @@ The safe default is `EXTERNAL_PROVIDER_MODE=FIXTURE`, which requires no live
 credential and is restricted to non-production use. Enabled `LIVE` mode
 requires `JSEARCH_API_KEY` before startup succeeds; it has no non-empty
 repository default. `JSEARCH_ENABLED=false` is the provider kill switch.
+`JSEARCH_PAGES_PER_SEARCH` defaults to one and is always clamped to the range
+one to two. This keeps cursor expansion bounded even when the caller also
+follows the returned continuation cursor.
 Rotation, restricted evidence, renewal, history verification and incident
 procedures are defined in
 [`docs/CREDENTIAL_OPERATIONS.md`](docs/CREDENTIAL_OPERATIONS.md).

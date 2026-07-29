@@ -21,6 +21,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 
@@ -49,7 +51,6 @@ class JSearchApiClientTest {
         properties.setApiKey("synthetic-key");
         properties.setCountry("gb");
         properties.setLanguage("en");
-        properties.setPagesPerSearch(1);
         properties.setEnabled(true);
     }
 
@@ -215,6 +216,40 @@ class JSearchApiClientTest {
         assertThat(response.getProvider()).isEqualTo("JSEARCH");
         assertThat(response.getCursor()).isNull();
         assertThat(response.getJobs()).isEmpty();
+    }
+
+    @Test
+    void defaultPageBudgetMakesOneOutboundProviderRequest() {
+        responseBodies.add("""
+                {"cursor":"cursor-2","data":[]}
+                """);
+
+        new JSearchApiClient(properties).search(request(false, null));
+
+        assertThat(requestedUris).hasSize(1);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "-100, 1",
+        "1, 1",
+        "2, 2",
+        "1000, 2"
+    })
+    void configuredPageBudgetBoundsOutboundProviderRequestCount(
+            int configuredPages,
+            int expectedRequests) {
+        properties.setPagesPerSearch(configuredPages);
+        responseBodies.add("""
+                {"cursor":"cursor-2","data":[]}
+                """);
+        responseBodies.add("""
+                {"cursor":"cursor-3","data":[]}
+                """);
+
+        new JSearchApiClient(properties).search(request(false, null));
+
+        assertThat(requestedUris).hasSize(expectedRequests);
     }
 
     @Test
