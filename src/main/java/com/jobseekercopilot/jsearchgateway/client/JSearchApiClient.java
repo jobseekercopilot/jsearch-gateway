@@ -68,7 +68,9 @@ public class JSearchApiClient implements JSearchProviderClient {
         try {
             JSearchSearchResponse response = empty();
             String cursor = request.getCursor();
-            for (int page = 0; page < Math.max(1, properties.getPagesPerSearch()); page++) {
+            for (int page = 0;
+                    page < properties.getPagesPerSearch();
+                    page++) {
                 String currentCursor = cursor;
                 JsonNode body = webClient.get()
                         .uri(uriBuilder -> {
