@@ -1,5 +1,13 @@
 # JSearch Gateway
 
+## Role in Job Seeker Copilot
+
+| Role | Called by | Calls | Data | Local port |
+|---|---|---|---|---:|
+| JSearch/RapidAPI provider search boundary | Job Service | JSearch in live mode or System Data fixtures | None | 8102 |
+
+See the central [job-search journey](https://docs.jobseekercopilot.com/journeys/job-search/), [provider integrations](https://docs.jobseekercopilot.com/services/provider-integrations/), and [configuration reference](https://docs.jobseekercopilot.com/operations/configuration/).
+
 JSearch Gateway isolates OpenWeb Ninja JSearch authentication, provider query
 construction, and provider response mapping behind the Job Seeker Copilot
 provider contract. Fixture mode reads only synthetic System Data responses.
