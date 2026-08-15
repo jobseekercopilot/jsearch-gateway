@@ -36,3 +36,5 @@ jobs:
         run: mvn -B --no-transfer-progress clean verify
       - name: Build container
         run: docker build --tag local/jsearch-gateway:ci .
+      - name: Verify production health command in the built image
+        run: ./scripts/test-container-health.sh local/jsearch-gateway:ci 8102
