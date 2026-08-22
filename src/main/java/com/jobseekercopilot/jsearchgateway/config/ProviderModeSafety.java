@@ -12,10 +12,17 @@ import org.springframework.stereotype.Component;
 public class ProviderModeSafety implements ApplicationRunner {
     private static final Logger log = LoggerFactory.getLogger(ProviderModeSafety.class);
     private final ExternalProviderProperties providerProperties;
+    private final JSearchProperties jSearchProperties;
     private final FixtureProperties fixtureProperties;
     private final Environment environment;
-    public ProviderModeSafety(ExternalProviderProperties providerProperties, FixtureProperties fixtureProperties, Environment environment) {
+
+    public ProviderModeSafety(
+            ExternalProviderProperties providerProperties,
+            JSearchProperties jSearchProperties,
+            FixtureProperties fixtureProperties,
+            Environment environment) {
         this.providerProperties = providerProperties;
+        this.jSearchProperties = jSearchProperties;
         this.fixtureProperties = fixtureProperties;
         this.environment = environment;
     }
@@ -25,8 +32,24 @@ public class ProviderModeSafety implements ApplicationRunner {
         if (production && providerProperties.getMode() == ExternalProviderMode.FIXTURE) {
             throw new IllegalStateException("jsearch-gateway cannot start in FIXTURE mode with a production profile.");
         }
-        log.info("provider mode active gateway=jsearch-gateway mode={} datasetId={} datasetVersion={} scenario={} externalCallsEnabled={}",
-                providerProperties.getMode(), fixtureProperties.getDatasetId(), fixtureProperties.getDatasetVersion(),
-                fixtureProperties.getScenario(), providerProperties.getMode() == ExternalProviderMode.LIVE);
+        boolean credentialConfigured = !blank(jSearchProperties.getApiKey());
+        boolean liveEnabled = providerProperties.getMode() == ExternalProviderMode.LIVE
+                && jSearchProperties.isEnabled();
+        if (liveEnabled && !credentialConfigured) {
+            throw new IllegalStateException(
+                    "JSearch LIVE mode requires JSEARCH_API_KEY.");
+        }
+        log.info(
+                "provider mode active gateway=jsearch-gateway mode={} datasetId={} datasetVersion={} scenario={} externalCallsEnabled={} credentialConfigured={}",
+                providerProperties.getMode(),
+                fixtureProperties.getDatasetId(),
+                fixtureProperties.getDatasetVersion(),
+                fixtureProperties.getScenario(),
+                liveEnabled,
+                credentialConfigured);
+    }
+
+    private boolean blank(String value) {
+        return value == null || value.isBlank();
     }
 }

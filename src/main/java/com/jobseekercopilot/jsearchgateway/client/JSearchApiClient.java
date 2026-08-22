@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -50,11 +51,13 @@ public class JSearchApiClient implements JSearchProviderClient {
 
     @Override
     public JSearchSearchResponse search(JSearchSearchRequest request) {
-        if (!properties.isEnabled() || blank(properties.getApiKey())) {
-            log.warn("JSearch provider disabled or credentials missing enabled={} hasApiKey={}",
-                    properties.isEnabled(),
-                    !blank(properties.getApiKey()));
+        if (!properties.isEnabled()) {
+            log.warn("JSearch provider is disabled");
             return empty();
+        }
+        if (blank(properties.getApiKey())) {
+            throw new ProviderUnavailableException(
+                    "JSearch live provider credential is not configured");
         }
         long startedAt = System.nanoTime();
         log.info("JSearch provider request started targetRole={} location={} remoteOnly={} pages={}",
@@ -65,7 +68,9 @@ public class JSearchApiClient implements JSearchProviderClient {
         try {
             JSearchSearchResponse response = empty();
             String cursor = request.getCursor();
-            for (int page = 0; page < Math.max(1, properties.getPagesPerSearch()); page++) {
+            for (int page = 0;
+                    page < properties.getPagesPerSearch();
+                    page++) {
                 String currentCursor = cursor;
                 JsonNode body = webClient.get()
                         .uri(uriBuilder -> {
@@ -112,20 +117,28 @@ public class JSearchApiClient implements JSearchProviderClient {
             log.warn("JSearch provider rate limited status={} durationMs={}",
                     ex.getStatusCode().value(),
                     (System.nanoTime() - startedAt) / 1_000_000);
-            throw new ProviderUnavailableException("JSearch rate limit exceeded", ex);
+            throw new ProviderUnavailableException(
+                    "JSearch rate limit exceeded",
+                    HttpStatus.TOO_MANY_REQUESTS);
         } catch (WebClientResponseException ex) {
             log.warn("JSearch provider failed status={} durationMs={} error={}",
                     ex.getStatusCode().value(),
                     (System.nanoTime() - startedAt) / 1_000_000,
-                    ex.getClass().getSimpleName(),
-                    ex);
-            throw new ProviderUnavailableException("JSearch API request failed", ex);
+                    ex.getClass().getSimpleName());
+            HttpStatus status = ex.getStatusCode() == HttpStatus.UNAUTHORIZED
+                    || ex.getStatusCode() == HttpStatus.FORBIDDEN
+                    ? HttpStatus.valueOf(ex.getStatusCode().value())
+                    : HttpStatus.SERVICE_UNAVAILABLE;
+            throw new ProviderUnavailableException(
+                    "JSearch API request failed",
+                    status);
         } catch (RuntimeException ex) {
             log.warn("JSearch provider failed durationMs={} error={}",
                     (System.nanoTime() - startedAt) / 1_000_000,
-                    ex.getClass().getSimpleName(),
-                    ex);
-            throw new ProviderUnavailableException("JSearch API request failed", ex);
+                    ex.getClass().getSimpleName());
+            throw new ProviderUnavailableException(
+                    "JSearch API request failed",
+                    HttpStatus.SERVICE_UNAVAILABLE);
         }
     }
 
@@ -169,7 +182,7 @@ public class JSearchApiClient implements JSearchProviderClient {
         job.setDescription(text(node, "job_description"));
         job.setEmploymentType(firstText(node, "job_employment_type", "job_employment_types"));
         job.setPrimaryApplyUrl(text(node, "job_apply_link"));
-        job.setDirectApply(node.path("job_apply_is_direct").isMissingNode() ? null : node.path("job_apply_is_direct").asBoolean());
+        job.setDirectApply(booleanValue(node, "job_apply_is_direct"));
         job.setLocationDisplayName(firstText(node, "job_location", "job_city"));
         job.setCity(text(node, "job_city"));
         job.setState(text(node, "job_state"));
@@ -182,13 +195,13 @@ public class JSearchApiClient implements JSearchProviderClient {
         job.setSalaryPeriod(text(node, "job_salary_period"));
         job.setPostedAt(text(node, "job_posted_at_datetime_utc"));
         job.setExpiresAt(text(node, "job_offer_expiration_datetime_utc"));
-        job.setRemote(node.path("job_is_remote").isMissingNode() ? null : node.path("job_is_remote").asBoolean());
+        job.setRemote(booleanValue(node, "job_is_remote"));
         var options = new ArrayList<JSearchApplyOption>();
         node.path("apply_options").forEach(optionNode -> {
             JSearchApplyOption option = new JSearchApplyOption();
             option.setPublisher(text(optionNode, "publisher"));
             option.setApplyUrl(text(optionNode, "apply_link"));
-            option.setDirect(optionNode.path("is_direct").isMissingNode() ? null : optionNode.path("is_direct").asBoolean());
+            option.setDirect(booleanValue(optionNode, "is_direct"));
             options.add(option);
         });
         job.setApplyOptions(options);
@@ -219,13 +232,32 @@ public class JSearchApiClient implements JSearchProviderClient {
         return node.path(field).isNumber() ? node.path(field).decimalValue() : null;
     }
 
+    private Boolean booleanValue(JsonNode node, String field) {
+        return node.path(field).isBoolean()
+                ? node.path(field).booleanValue()
+                : null;
+    }
+
     private boolean blank(String value) {
         return value == null || value.isBlank();
     }
 
     public static class ProviderUnavailableException extends RuntimeException {
-        public ProviderUnavailableException(String message, Throwable cause) {
-            super(message, cause);
+        private final HttpStatus status;
+
+        public ProviderUnavailableException(String message) {
+            this(message, HttpStatus.SERVICE_UNAVAILABLE);
+        }
+
+        public ProviderUnavailableException(
+                String message,
+                HttpStatus status) {
+            super(message, null, false, false);
+            this.status = status;
+        }
+
+        public HttpStatus getStatus() {
+            return status;
         }
     }
 }

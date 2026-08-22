@@ -103,8 +103,8 @@ public class FixtureJSearchProviderClient implements JSearchProviderClient {
         return ((page + 1) * pageSize) < total ? "fixture-page-" + (page + 1) : null;
     }
 
-    private String text(String value, String fallback) {
-        return value == null ? fallback : value;
+    private String text(Object value, String fallback) {
+        return value == null ? fallback : value.toString();
     }
 
     private int number(Integer value) {

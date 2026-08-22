@@ -4,17 +4,21 @@ spring:
 
 server:
   port: ${SERVER_PORT:8102}
+  error:
+    include-message: never
+    include-stacktrace: never
+    include-binding-errors: never
 
 jsearch:
   base-url: ${JSEARCH_BASE_URL:https://api.openwebninja.com/jsearch}
-  api-key: ${JSEARCH_API_KEY}
+  api-key: ${JSEARCH_API_KEY:}
   country: ${JSEARCH_COUNTRY:gb}
   language: ${JSEARCH_LANGUAGE:en}
   pages-per-search: ${JSEARCH_PAGES_PER_SEARCH:1}
   enabled: ${JSEARCH_ENABLED:true}
 
 external-provider:
-  mode: ${EXTERNAL_PROVIDER_MODE:LIVE}
+  mode: ${EXTERNAL_PROVIDER_MODE:FIXTURE}
 
 fixture:
   dataset-id: ${FIXTURE_DATASET_ID:uk-software-developer-demo}
@@ -32,4 +36,9 @@ logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%X{correlationId}] [%X{serviceName}] [%thread] %logger{36} - %msg%n"
   level:
+    root: INFO
     com.jobseekercopilot: ${APP_LOG_LEVEL:INFO}
+    org.springframework.http.codec: WARN
+    org.springframework.web.reactive.function.client.ExchangeFunctions: WARN
+    org.springframework.web: INFO
+    reactor.netty.http.client: WARN
