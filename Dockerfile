@@ -6,7 +6,7 @@ COPY src ./src
 COPY docs ./docs
 RUN mvn -B --no-transfer-progress clean verify
 
-FROM eclipse-temurin:17-jre@sha256:1824944ef1bd572d1ff0952afeb2fec7931d77c972c4fbc4dfcdf89f758fb490
+FROM eclipse-temurin:17-jre-alpine@sha256:90b7615cb81e3a75f69124fb480e48981c7d56dbc9f32c614d789d3a1c3e32fe
 
 WORKDIR /app
 COPY --from=build /app/target/jsearch-gateway-1.0.0.jar app.jar
